@@ -35,7 +35,7 @@ static const char *WIFI_PASSWORD = "attendance112";
 // Hostname the PC app advertises via mDNS (attendance-application must be
 // reachable at http://attendance.local — see the app's README for how to
 // enable this on Windows/macOS/Linux).
-static const char *SERVER_MDNS_NAME = "worshix"; // resolves "attendance.local"
+static const char *SERVER_MDNS_NAME = "Mangoto"; // resolves "lenovo.local"
 static const char *SELF_MDNS_NAME = "esp32-attendance";
 static const uint16_t SERVER_PORT = 3000; // Next.js dev/start default
 

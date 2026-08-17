@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Play, Square } from "lucide-react";
 
@@ -116,7 +117,14 @@ export default function EventsView() {
           <tbody className="divide-y divide-border">
             {(events ?? []).map((e) => (
               <tr key={e.id} className="bg-background">
-                <td className="px-4 py-2 font-medium">{e.name}</td>
+                <td className="px-4 py-2 font-medium">
+                  <Link
+                    href={`/events/${e.id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {e.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2 text-muted">
                   {new Date(e.startedAt).toLocaleString()}
                 </td>

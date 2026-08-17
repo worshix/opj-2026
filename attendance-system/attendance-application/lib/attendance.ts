@@ -90,17 +90,28 @@ export async function getActiveEventRoster(): Promise<{
     where: { isActive: true },
   });
 
+  if (!activeEvent) {
+    return { event: null, students: [] };
+  }
+
+  return { event: activeEvent, students: await getEventRoster(activeEvent.id) };
+}
+
+/**
+ * Computes Present/Left/Absent for every student against an arbitrary
+ * (possibly ended) event, so past events remain fully inspectable rather
+ * than only the currently-active one.
+ */
+export async function getEventRoster(
+  eventId: string
+): Promise<StudentWithStatus[]> {
   const students = await prisma.student.findMany({
     orderBy: { name: "asc" },
-    include: activeEvent
-      ? { records: { where: { eventId: activeEvent.id } } }
-      : undefined,
+    include: { records: { where: { eventId } } },
   });
 
-  const result: StudentWithStatus[] = students.map((s) => {
-    const record = activeEvent
-      ? (s as typeof s & { records?: { arrivedAt: Date | null; leftAt: Date | null }[] }).records?.[0]
-      : undefined;
+  return students.map((s) => {
+    const record = s.records[0];
 
     let status: StudentStatus = "absent";
     if (record?.arrivedAt && record.leftAt) status = "left";
@@ -116,15 +127,4 @@ export async function getActiveEventRoster(): Promise<{
       leftAt: record?.leftAt ? record.leftAt.toISOString() : null,
     };
   });
-
-  return {
-    event: activeEvent
-      ? {
-          id: activeEvent.id,
-          name: activeEvent.name,
-          startedAt: activeEvent.startedAt,
-        }
-      : null,
-    students: result,
-  };
 }

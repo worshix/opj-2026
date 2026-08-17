@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
@@ -91,9 +92,9 @@ export default function Dashboard() {
       {!data.event && (
         <div className="rounded-lg border border-dashed border-border bg-surface p-4 text-sm text-muted">
           No event is active. Start one from the{" "}
-          <a href="/events" className="text-primary hover:underline">
+          <Link href="/events" className="text-primary hover:underline">
             Events
-          </a>{" "}
+          </Link>{" "}
           page so taps are recorded.
         </div>
       )}
