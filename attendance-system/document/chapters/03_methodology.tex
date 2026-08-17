@@ -1,0 +1,368 @@
+\chapter{Methodology}
+\label{ch:methodology}
+
+\section{Introduction}
+
+This chapter explains how the Real-Time RFID Employee Attendance System was designed and built. It covers the overall system architecture, the reasoning behind each hardware component, the custom circuit board built to hold everything together cleanly, the firmware logic running on the ESP32, the software architecture of the PC application, the database design, and the bill of quantities for the parts purchased. The build followed an incremental order: get the RFID reader working in isolation first, then the buzzer and LEDs, then local storage, then networking, and only then the server-side application — bringing each layer up on top of one that was already tested, rather than trying to get the whole system working at once. This mirrors the incremental development model described by \textcite{sommerville2016software}, where a system is delivered in small, independently testable stages so that problems surface early, close to the change that caused them, rather than all at once during a single final integration step.
+
+\section{System Architecture}
+
+The system is made up of two independent halves that talk to each other only over Wi-Fi: a reader station built around an ESP32, and a PC application that is the single source of truth for every student, event, and attendance record. Figure~\ref{fig:block-diagram} shows how data moves between them.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        block/.style={rectangle, draw=black, thick, minimum width=2.6cm, minimum height=1.1cm, align=center, fill=blue!6, font=\small},
+        io/.style={rectangle, draw=black, thick, minimum width=2.2cm, minimum height=0.9cm, align=center, fill=orange!8, font=\small},
+        store/.style={rectangle, draw=black, thick, minimum width=2.2cm, minimum height=0.9cm, align=center, fill=green!8, font=\small},
+        arrow/.style={-{Latex[length=2.5mm]}, thick},
+        node distance=0.9cm and 1.3cm
+    ]
+        % ESP32 side
+        \node[io] (rfid) {RC522\\RFID Reader};
+        \node[block, right=of rfid] (esp32) {ESP32\\Microcontroller};
+        \node[io, above=of esp32] (lcd) {16x2 I2C\\LCD};
+        \node[io, below=of esp32] (buzzer) {Buzzer};
+        \node[store, right=1.6cm of esp32] (flash) {LittleFS\\(cards + queue)};
+
+        % Network
+        \node[block, below right=1.4cm and 2.0cm of esp32, fill=yellow!12] (wifi) {Wi-Fi / mDNS\\(attendance.local)};
+
+        % Server side
+        \node[block, right=2.6cm of flash, fill=purple!8] (nextjs) {Next.js App\\(PC, port 3000)};
+        \node[store, above=of nextjs] (sqlite) {SQLite\\via Prisma};
+        \node[io, below=of nextjs] (dashboard) {Dashboard\\(Admin / HR)};
+
+        \draw[arrow] (rfid) -- (esp32);
+        \draw[arrow] (esp32) -- (lcd);
+        \draw[arrow] (esp32) -- (buzzer);
+        \draw[arrow] (esp32) -- (flash);
+        \draw[arrow] (esp32.south) -- (wifi.north west);
+        \draw[arrow] (wifi.north east) -- (nextjs.south west);
+        \draw[arrow] (nextjs) -- (sqlite);
+        \draw[arrow] (nextjs) -- (dashboard);
+
+        \draw[arrow] ([yshift=4pt]flash.east) -- node[above, font=\tiny] {POST /api/tap, /api/sync} ([yshift=4pt]nextjs.west);
+        \draw[arrow] ([yshift=-4pt]nextjs.west) -- node[below, font=\tiny] {GET /api/cards, /api/health} ([yshift=-4pt]flash.east);
+    \end{tikzpicture}
+    \caption{High-level system architecture: the ESP32 reader station always initiates contact with the PC application, never the other way around.}
+    \label{fig:block-diagram}
+\end{figure}
+
+Two design choices in this diagram are worth calling out explicitly, because they are the parts of the architecture that differ from a typical class-project implementation:
+
+\begin{itemize}
+    \item \textbf{The ESP32 always initiates.} The PC application never opens a connection to the device. This keeps the device side simple, since it needs no server of its own, and means the PC can sit behind a firewall or NAT without any port-forwarding.
+    \item \textbf{LittleFS sits between the reader and the network.} Every tap is written to flash before the device even attempts to send it. If that send fails, the tap is already safe and simply waits in a queue.
+\end{itemize}
+
+\section{Requirements Analysis}
+
+\subsection{Functional Requirements}
+\begin{itemize}
+    \item Read a unique identifier from an RFID card presented to the reader.
+    \item Distinguish a known card from an unknown one, using a locally cached list that works even without a network connection.
+    \item Record the first tap of the day for a known card as an arrival, and the second as a departure, for whichever event is currently active.
+    \item Give immediate audible and visual feedback at the reader for every tap, including the specific case of an unknown card.
+    \item Allow an administrator to create students, create and end attendance events, and register a card from an unknown-tap alert.
+    \item Display live Present / Left / Absent status for every student against the active event.
+\end{itemize}
+
+\subsection{Non-Functional Requirements}
+\begin{itemize}
+    \item \textbf{Availability:} the reader station must keep logging taps even if Wi-Fi or the PC application is unreachable.
+    \item \textbf{Low latency:} a tap should be acknowledged at the reader (beep, LCD message) in well under a second.
+    \item \textbf{Low cost:} the hardware bill of materials should stay well below the cost of a commercial RFID attendance terminal.
+    \item \textbf{Maintainability:} the PC application must be installable and runnable by someone without a database administration background, given SQLite requires no separate server process.
+    \item \textbf{Security:} unknown cards must never be auto-registered, to prevent an unauthorised card from silently gaining access to the attendance record.
+\end{itemize}
+
+\section{Hardware Design}
+\label{sec:hardware-design}
+
+\subsection{Component Selection}
+
+Table~\ref{tab:component-summary} summarises the core components used in the reader station, and the subsections that follow explain the reasoning behind each choice in more detail.
+
+\begin{table}[H]
+    \centering
+    \caption{Core hardware components}
+    \label{tab:component-summary}
+    \begin{tabular}{@{}p{3.2cm}p{9.5cm}@{}}
+        \toprule
+        \textbf{Component} & \textbf{Role in the system} \\
+        \midrule
+        ESP32-WROOM-32 DevKit & Main microcontroller: runs the firmware, drives every other component \\
+        MFRC522 RFID reader & Reads the 13.56\,MHz UID from each employee's card \\
+        16x2 I2C LCD & Gives on-the-spot feedback (name, "welcome", "unknown card", status) \\
+        Active buzzer & Audible confirmation, distinct beep patterns per outcome \\
+        Status LEDs (x2) & Wi-Fi connected / App reachable indicators \\
+        Push button & Non-destructive local reset (clears sync queue, re-pulls card cache) \\
+        LM2596 buck converter & Steps the 12\,V supply down to the voltages the reader circuit needs \\
+        12\,V/2\,A power adapter & Mains power source for the enclosure \\
+        Custom PCB & Carries all of the above cleanly instead of loose breadboard wiring \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{ESP32-WROOM-32 Development Board}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{esp32.jpg}
+    \caption{ESP32-WROOM-32 development board used as the reader station's microcontroller}
+    \label{fig:esp32}
+\end{figure}
+
+The ESP32 was chosen over a plain Arduino because it has built-in Wi-Fi, which the whole architecture in Section~\ref{sec:hardware-design} depends on — an Arduino Uno would have needed a separate Wi-Fi shield and more wiring for no real benefit. It also has enough GPIO pins to drive the RFID reader over SPI, the LCD over I2C, two LEDs, a buzzer, and a reset button at the same time without needing an I/O expander, and it is inexpensive enough that the whole reader station stays well within a modest project budget \parencite{espressif2023esp32}.
+
+\subsubsection{MFRC522 RFID Reader Module}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{rc522.jpg}
+    \caption{MFRC522 RFID reader module}
+    \label{fig:rc522}
+\end{figure}
+
+The MFRC522 is one of the most widely documented RFID front-end chips available to hobbyist and student projects, with a mature Arduino/ESP32 library and a well-specified datasheet \parencite{nxp2016mfrc522}. It communicates over SPI, reads 13.56\,MHz MIFARE-family cards at a range of a few centimetres, and — importantly for this project's budget — costs only a few dollars per unit. Its main limitation is that it must be powered from 3.3\,V rather than 5\,V, a detail that shaped the power-supply design discussed in Section~\ref{sec:power-design}.
+
+\subsubsection{16x2 I2C LCD Display}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{lcd.jpg}
+    \caption{16x2 character LCD with I2C (PCF8574) backpack}
+    \label{fig:lcd}
+\end{figure}
+
+An LCD was chosen over relying on LEDs alone because a name or a short message ("Welcome, Dennis", "Unknown card, see front desk") is far more useful at the point of tap than a blinking light. The I2C backpack version was selected specifically because it reduces the wiring from the roughly ten pins a raw HD44780 panel needs down to just two data lines (SDA/SCL) plus power and ground, which mattered once the layout moved onto a compact custom PCB.
+
+\subsubsection{Active Buzzer}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{buzzer.jpg}
+    \caption{Active buzzer used for audible tap feedback}
+    \label{fig:buzzer}
+\end{figure}
+
+The buzzer gives staff a way to confirm a tap succeeded without needing to look at the LCD every time. An \textit{active} buzzer was chosen over a passive one because it only needs a digital HIGH/LOW signal to produce a tone, rather than a driven PWM waveform — this keeps the firmware's \texttt{beep()} routine (Appendix~\ref{app:firmware}) a simple digitalWrite loop, and it is what allows different tap outcomes to be distinguished by beep count and timing alone: two short beeps for a normal tap, three for an already-recorded duplicate, and one long beep for an unknown card or a missing active event.
+
+\subsubsection{Status LEDs}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.28\textwidth]{LED.png}
+    \caption{5\,mm LED, used for the Wi-Fi and App status indicators}
+    \label{fig:led}
+\end{figure}
+
+Two identical 5\,mm LEDs were used, wired to separate GPIO pins so their meaning could be kept semantically distinct: one shows whether the device has joined the Wi-Fi network, the other shows whether the PC application actually responded to the last health check. This distinction was made deliberately, because "no Wi-Fi" and "Wi-Fi is fine but the server is unreachable" require different fixes, and a single combined status LED cannot tell front-desk staff which one they are dealing with.
+
+\subsubsection{Power Supply: 12\,V Adapter and LM2596 Buck Converter}
+\label{sec:power-design}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \includegraphics[width=\textwidth]{power_supply.png}
+        \caption{12\,V/2\,A mains adapter}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \includegraphics[width=\textwidth]{buck_coverter.jpg}
+        \caption{LM2596 adjustable buck converter}
+    \end{subfigure}
+    \caption{Power supply components: a mains adapter feeding an adjustable buck converter}
+    \label{fig:power-supply}
+\end{figure}
+
+A standard 12\,V/2\,A wall adapter supplies the enclosure, chosen because it is a common, inexpensive, and easily replaceable part rather than a custom power brick. Since neither the ESP32 board (5\,V in) nor its 3.3\,V logic rail can be fed 12\,V directly, an LM2596-based buck converter steps that down to a safe, regulated 5\,V before it reaches the ESP32's own onboard regulator. This two-stage approach — mains adapter to 5\,V, then the ESP32's own regulator to 3.3\,V for the logic rail — follows the voltage budget worked out during design: the RC522 must only ever see 3.3\,V, never 5\,V, since running it at 5\,V risks damaging the chip, while the LCD panel and its backlight are happy at 5\,V. The full voltage and current budget for every component is documented alongside the pinout table in Appendix~\ref{app:pinout}.
+
+\subsection{Circuit Design}
+
+The schematic in Figure~\ref{fig:schematic} was drawn in Proteus Design Suite before any PCB layout work began, so that every connection could be checked on paper first. It groups the RC522 reader, the LCD, the status LEDs and buzzer, and the ESP32 itself into clearly labelled blocks, with decoupling capacitors placed close to the power pins of the RC522 and the LCD to keep their supply rails stable during a card read.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{proteus_schematic_view.jpeg}
+    \caption{Circuit schematic for the reader station, drawn in Proteus Design Suite}
+    \label{fig:schematic}
+\end{figure}
+
+\subsection{PCB Design}
+
+Once the schematic was verified, it was translated into a custom two-layer PCB layout (Figure~\ref{fig:pcb-layout}), rather than leaving the final build on a breadboard or stripboard. A custom board was worth the extra design time for three reasons: it removes the risk of a loose jumper wire causing an intermittent fault after the enclosure is closed up and installed at the entrance, it gives clearly labelled header positions for the RC522, LCD, and status components so the unit could be reassembled or repaired without re-deriving the wiring from scratch, and it fits inside a much smaller enclosure than an equivalent breadboard build. Figure~\ref{fig:pcb-3d} shows the resulting layout rendered in 3D, with the ESP32 DevKit mounted directly onto the board via pin headers.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{proteus_pcb_view.jpeg}
+    \caption{PCB layout (top copper in blue, bottom copper in purple) for the reader station}
+    \label{fig:pcb-layout}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{proteus_pcb_3d.jpeg}
+    \caption{3D render of the assembled reader station PCB}
+    \label{fig:pcb-3d}
+\end{figure}
+
+\section{Firmware Design}
+
+The ESP32 firmware (the full source is reproduced in Appendix~\ref{app:firmware}) is built around a single non-blocking \texttt{loop()} that checks the reset button, maintains the Wi-Fi and server connection, polls the RFID reader, drains the offline queue when possible, and refreshes the idle LCD screen — all on every pass, none of them waiting on the others. The logic that matters most for the objectives in Chapter 1 is what happens the instant a card is tapped, shown in Figure~\ref{fig:tap-flowchart}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.7cm and 1.7cm,
+        startstop/.style={rectangle, rounded corners, draw=black, thick, fill=blue!8, minimum width=3.0cm, minimum height=0.9cm, align=center, font=\small},
+        decision/.style={diamond, draw=black, thick, fill=yellow!12, aspect=2.6, inner sep=1pt, align=center, font=\small},
+        process/.style={rectangle, draw=black, thick, fill=green!8, minimum width=3.4cm, minimum height=0.8cm, align=center, font=\small},
+        arrow/.style={-{Latex[length=2.2mm]}, thick}
+    ]
+        \node[startstop] (start) {Card tapped\\UID read};
+        \node[decision, below=of start] (known) {UID in local\\card cache?};
+        \node[decision, below=of known] (activeevt) {Active event\\running?};
+        \node[decision, below=of activeevt] (hasrecord) {Existing record\\for this event?};
+        \node[decision, below=of hasrecord] (hasleft) {leftAt\\already set?};
+        \node[process, below=of hasleft] (depart) {Set leftAt\\2 beeps -- "Goodbye"};
+
+        \node[process, right=of known] (unknown) {Log unknown tap\\1 long beep\\forward for dashboard toast};
+        \node[process, right=of activeevt] (noevt) {1 long beep\\"No active event"};
+        \node[process, right=of hasrecord] (arrive) {Create record,\\set arrivedAt\\2 beeps -- "Welcome"};
+        \node[process, right=of hasleft] (dup) {No change\\3 beeps -- "Already logged"};
+
+        \draw[arrow] (start) -- (known);
+        \draw[arrow] (known) -- node[left, font=\tiny]{no} (activeevt);
+        \draw[arrow] (known) -- node[above, font=\tiny]{yes} (unknown);
+        \draw[arrow] (activeevt) -- node[left, font=\tiny]{yes} (hasrecord);
+        \draw[arrow] (activeevt) -- node[above, font=\tiny]{no} (noevt);
+        \draw[arrow] (hasrecord) -- node[left, font=\tiny]{yes} (hasleft);
+        \draw[arrow] (hasrecord) -- node[above, font=\tiny]{no -- new arrival} (arrive);
+        \draw[arrow] (hasleft) -- node[left, font=\tiny]{no} (depart);
+        \draw[arrow] (hasleft) -- node[above, font=\tiny]{yes -- duplicate} (dup);
+    \end{tikzpicture}
+    \caption{Tap-handling logic, shared identically between the live \texttt{/api/tap} path and the offline queue replayed through \texttt{/api/sync}. The main decision spine runs top to bottom; each outcome branches right to the resulting beep/LCD feedback and database action.}
+    \label{fig:tap-flowchart}
+\end{figure}
+
+Note that the decision "UID in local card cache?" is answered entirely from the copy of the card list stored on the ESP32's own flash — the device never needs to ask the server whether a card is known before giving feedback. That cache is refreshed periodically from \texttt{GET /api/cards} whenever the app is reachable, which is what allows a newly registered student to start tapping in successfully within about a minute of being added on the dashboard, even if the reader briefly loses connectivity right after.
+
+\section{Software Architecture}
+
+The PC application is built with Next.js, using its API routes to expose the endpoints in Table~\ref{tab:api-endpoints} to the ESP32, and its page routes for the dashboard, students, and events screens used by staff. Every tap — whether delivered live or replayed from the device's offline queue — is processed through one shared function, so the arrival/departure/duplicate rules in Figure~\ref{fig:tap-flowchart} cannot drift out of sync between the two code paths.
+
+\begin{table}[H]
+    \centering
+    \caption{API endpoints exposed by the PC application}
+    \label{tab:api-endpoints}
+    \begin{tabular}{@{}p{2.6cm}p{3.6cm}p{6.5cm}@{}}
+        \toprule
+        \textbf{Method} & \textbf{Endpoint} & \textbf{Purpose} \\
+        \midrule
+        GET & /api/health & Liveness check used to drive the App-reachable LED \\
+        POST & /api/tap & Submit a single live tap (UID, timestamp) \\
+        POST & /api/sync & Submit a batch of queued taps after reconnecting \\
+        GET & /api/cards & Return all known card UIDs, for the device's local cache \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+A full list of the application's routes, including the student- and event-management endpoints used only by the dashboard itself, is given in Appendix~\ref{app:api}.
+
+\section{Database Design}
+
+Attendance status is deliberately \textit{not} stored as a field anywhere in the database. Instead, it is computed on every request from two nullable timestamps, as shown in the entity-relationship diagram in Figure~\ref{fig:erd}. A student with no attendance record at all for the active event is \textit{Absent}; a record with \texttt{arrivedAt} set but \texttt{leftAt} still null is \textit{Present}; a record with both set is \textit{Left}. This avoids the class of bug where a stored status field quietly falls out of sync with the timestamps it was supposed to summarise.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        entity/.style={rectangle, draw=black, thick, fill=blue!6, minimum width=4.4cm, align=left, font=\small, inner sep=8pt},
+        rel/.style={-{Latex[length=2.2mm]}, thick}
+    ]
+        \node[entity] (student) {
+            \textbf{Student}\\
+            \rule{4cm}{0.3pt}\\
+            id : String (PK)\\
+            name : String\\
+            regNumber : String (unique)\\
+            cardUid : String (unique)\\
+            createdAt : DateTime
+        };
+
+        \node[entity, below right=2.4cm and 3.4cm of student] (record) {
+            \textbf{AttendanceRecord}\\
+            \rule{4.4cm}{0.3pt}\\
+            id : String (PK)\\
+            studentId : String (FK)\\
+            eventId : String (FK)\\
+            arrivedAt : DateTime?\\
+            leftAt : DateTime?\\
+            \footnotesize @@unique([studentId, eventId])
+        };
+
+        \node[entity, above right=2.4cm and 3.4cm of student] (event) {
+            \textbf{Event}\\
+            \rule{4cm}{0.3pt}\\
+            id : String (PK)\\
+            name : String\\
+            startedAt : DateTime\\
+            endedAt : DateTime?\\
+            isActive : Boolean
+        };
+
+        \node[entity, below=3.2cm of student, fill=orange!8] (unknown) {
+            \textbf{UnknownTap}\\
+            \rule{4cm}{0.3pt}\\
+            id : String (PK)\\
+            cardUid : String\\
+            tappedAt : DateTime\\
+            acknowledged : Boolean
+        };
+
+        \draw[rel] (student.east) -- node[above, sloped, font=\tiny]{1 : many} (record.west);
+        \draw[rel] (event.south) -- node[above, sloped, font=\tiny]{1 : many} (record.north);
+        \draw[rel, dashed] (student.south) -- node[right, font=\tiny]{\shortstack[l]{no FK -- matched\\by cardUid only}} (unknown.north);
+    \end{tikzpicture}
+    \caption{Entity-relationship diagram of the Prisma/SQLite data model. UnknownTap has no foreign key to Student because, by definition, no matching student exists yet.}
+    \label{fig:erd}
+\end{figure}
+
+\section{Bill of Quantities}
+
+Table~\ref{tab:boq} lists the components purchased for a single reader station, with approximate unit prices in United States Dollars based on prevailing local electronics-supplier prices at the time of purchase. Prices are indicative and will vary by supplier and by the quantity ordered.
+
+\begin{table}[H]
+    \centering
+    \caption{Bill of Quantities for one reader station}
+    \label{tab:boq}
+    \begin{tabular}{@{}p{5.2cm}ccrr@{}}
+        \toprule
+        \textbf{Item} & \textbf{Unit} & \textbf{Qty} & \textbf{Unit Price (USD)} & \textbf{Total (USD)} \\
+        \midrule
+        ESP32-WROOM-32 DevKit & pc & 1 & 6.00 & 6.00 \\
+        MFRC522 RFID reader module & pc & 1 & 2.50 & 2.50 \\
+        13.56\,MHz Mifare RFID cards & pc & 10 & 0.50 & 5.00 \\
+        16x2 I2C LCD display & pc & 1 & 3.50 & 3.50 \\
+        Active buzzer module & pc & 1 & 0.80 & 0.80 \\
+        5\,mm LEDs (status indicators) & pc & 2 & 0.10 & 0.20 \\
+        220\,$\Omega$ resistors & pc & 4 & 0.05 & 0.20 \\
+        Momentary push button & pc & 1 & 0.30 & 0.30 \\
+        LM2596 buck converter module & pc & 1 & 1.50 & 1.50 \\
+        12\,V / 2\,A mains power adapter & pc & 1 & 4.00 & 4.00 \\
+        Custom 2-layer PCB (fabrication, qty 3) & lot & 1 & 15.00 & 15.00 \\
+        Weatherproof enclosure box & pc & 1 & 5.00 & 5.00 \\
+        Header pins, wiring, solder, misc. & lot & 1 & 3.00 & 3.00 \\
+        \midrule
+        \multicolumn{4}{r}{\textbf{Total}} & \textbf{47.00} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+No cost is attributed to the PC running the Next.js application, since Infor Relay Systems (Pvt) Ltd already had a suitable front-desk computer available; the software itself uses only free and open-source tools.
+
+\section{Testing Approach}
+
+Testing followed the same incremental order the system was built in. The RC522 was first tested in isolation with a simple UID-dump sketch to confirm reliable reads before any other component was wired in. The buzzer and LED patterns were then verified against the beep table in Figure~\ref{fig:tap-flowchart} using test button presses, without any network code running. The LittleFS card cache and offline queue were tested by physically disconnecting the reader station's Wi-Fi mid-session and confirming that taps were still saved and later drained once connectivity returned. Finally, the complete system was tested end-to-end during a live orientation-day event at Infor Relay Systems (Pvt) Ltd, tapping in and out with several registered cards and one deliberately unregistered card to confirm the unknown-card alert and registration flow. The results of that testing are presented in Chapter 4.

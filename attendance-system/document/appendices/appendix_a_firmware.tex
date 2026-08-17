@@ -1,0 +1,10 @@
+\chapter{ESP32 Firmware Source Code}
+\label{app:firmware}
+
+The complete Arduino sketch running on the reader station is reproduced below, exactly as flashed to the device. It implements the boot sequence, Wi-Fi and mDNS connection handling, RFID card reading, the offline tap queue on LittleFS, and the reset-button behaviour discussed in Chapter 3.
+
+\lstinputlisting[
+    language=C++,
+    caption={\texttt{attendance-firmware.ino} -- full ESP32 reader station firmware},
+    label={lst:firmware}
+]{../attendance-firmware/attendance-firmware.ino}

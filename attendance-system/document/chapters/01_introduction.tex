@@ -1,0 +1,52 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Abstract}
+
+Infor Relay Systems (Pvt) Ltd, like many organisations, has relied on a paper attendance register and supervisor sign-off to track when employees arrive and leave work. This method sounds simple, but in practice it creates more problems than it solves. Registers get filled in late, entries go missing, and it is genuinely hard to prove exactly when someone clocked in on a busy morning. Those small gaps add up: payroll staff spend hours reconciling hand-written times, and the business loses confidence in the numbers it is paying people against.
+
+This project set out to replace that register with something that records the moment automatically. The result is a Real-Time RFID Employee Attendance System built around an ESP32 microcontroller, an MFRC522 RFID reader, and a purpose-built Next.js web application running on a PC at the front desk. Each employee is issued an RFID card. Tapping it at the reader on the way in and again on the way out is all that is required — the station beeps, the LCD confirms the name, and the PC dashboard updates within seconds to show who is \textit{Present}, who has \textit{Left}, and who is \textit{Absent} for the day.
+
+What makes the design worth documenting is not the RFID reader itself — that part is well understood — but the fact that the reader station keeps working when the network does not. Every tap is written to the device's own flash storage first; forwarding it live to the server is a bonus, not a requirement. If Wi-Fi drops or the PC is rebooted, taps queue locally and drain automatically once the connection returns. Two indicator LEDs make the difference between "no Wi-Fi" and "Wi-Fi is fine but the server is down" visible to whoever is on the door, instead of leaving them guessing. This report walks through why that design was chosen, how it was built and wired, what it looks like running, and how well it met the objectives set out at the start of the attachment.
+
+\section{Background of the Study}
+
+Attendance tracking sits at the intersection of two things every organisation cares about: paying people correctly and knowing who is on site. At Infor Relay Systems (Pvt) Ltd, both of those depend on a manual register signed at a supervisor's desk. It is a method that has worked, in a loose sense, for a long time — but it was never built to survive a busy shift change, a supervisor who is away, or a payroll clerk who has to turn scrawled timestamps into billable hours by the end of the month.
+
+The wider literature backs up what the company was already experiencing informally. Manual and shared-login systems are consistently identified as the easiest to abuse, because they have no built-in way to verify that the person recorded is the person who actually showed up \parencite{oloid2025buddy}. The practice of one employee marking attendance for another — commonly called buddy punching — is a well-documented consequence of exactly this kind of system, and it directly inflates the hours a company believes it owes in wages \parencite{qandle2025buddy}. RFID-based attendance has become one of the more common responses to this problem across both educational and industrial settings, precisely because a card is quick to tap, hard to forge casually, and ties a specific identifier to a specific timestamp \parencite{want2006introduction, landt2005history}.
+
+A number of recent student projects have applied the same core idea — an ESP32 paired with an MFRC522 reader — to build low-cost, real-time attendance systems for schools and small offices \parencite{singh2022iot, yadav2025rfid, hutabarat2025implementation}. These projects consistently report faster, more reliable attendance capture than manual alternatives, though most of them assume the device is always online and log straight to a spreadsheet or a single database call. That assumption does not hold well in a factory or workshop environment, where Wi-Fi coverage at a shop-floor entrance is often patchy. The design adopted in this project borrows the RFID-plus-microcontroller approach from that body of work, but treats network connectivity as something that can fail, not something to assume.
+
+\section{Problem Statement}
+
+At Infor Relay Systems (Pvt) Ltd, recording attendance on time and correctly is very important for smooth operations and good service delivery. However, many employees record their attendance late, and the paper register offers no real safeguard against a colleague signing in on someone else's behalf. This causes problems such as incorrect attendance records, payroll errors, poor planning, and reduced productivity. Errors introduced at the point of capture are expensive to fix later: a payroll clerk cannot always tell, weeks after the fact, whether a blank entry means an employee was absent or simply forgot to sign the book. There is, therefore, a clear need to improve the attendance recording process to make it faster, more accurate, and harder to manipulate, without asking staff to learn a complicated new system.
+
+\section{Aim}
+
+To develop a reliable and efficient RFID employee attendance system that enhances the accuracy of attendance tracking and reduces errors in the payroll process.
+
+\section{Objectives}
+
+\begin{enumerate}[label=\arabic*.]
+    \item To automate attendance tracking, so that arrival and departure times are captured the instant an employee taps their card, without manual data entry.
+    \item To ensure accurate labour costing, by producing attendance records precise and trustworthy enough to support payroll calculation.
+    \item To integrate RFID attendance with existing systems, so that the data captured at the reader is usable by the processes that already run the business.
+\end{enumerate}
+
+\section{Proposed Solution}
+
+The proposed solution is a two-part system: an ESP32-based reader station at the entrance, and a Next.js web application running on a PC that acts as the single source of truth for every student or employee record and every attendance event. Each person taps an RFID card once on arrival and once on departure. The dashboard derives three states from those two taps — \textit{Present} (arrived, not yet left), \textit{Left} (arrived and departed), and \textit{Absent} (no tap at all) — rather than storing a status field directly, which keeps the underlying data model small and avoids records ever going stale or contradicting the timestamps they are built from.
+
+The reader station is deliberately designed to be useful even when the network is not. It always writes a tap to its own local flash storage before attempting to forward it, so a queue of pending taps survives a power cycle and drains automatically the moment the server becomes reachable again. The station resolves the server's address using mDNS rather than a fixed IP address, which means the front-desk PC can be restarted, or the router can hand out a new address, without anyone needing to reflash the device. Two separate status LEDs — one for Wi-Fi, one for the application server — let front-desk staff immediately tell "no network" apart from "network is fine, but the app is down," which a single combined status light cannot do. Unknown cards are never silently ignored or auto-registered: a tap from an unrecognised UID is logged and surfaced on the dashboard as an alert with a one-click \textit{Register} action, so a new employee's card becomes usable within seconds of an administrator confirming it. Chapter 3 sets out the full technology stack, wiring, and software architecture behind this design in detail.
+
+\section{Justification of the Study}
+
+Manual attendance and shared verification processes are a documented source of payroll inaccuracy and time theft, not just an operational inconvenience \parencite{qandle2025buddy, oloid2025buddy}. Automating capture at the point of arrival closes that gap directly: RFID technology guarantees that the record created belongs to the card that was tapped, and removes the opportunity for a colleague to sign in on someone else's behalf \parencite{shukla2019conceptual}. For Infor Relay Systems (Pvt) Ltd specifically, a faster and more trustworthy attendance record shortens the time payroll staff spend reconciling hours, reduces disputes over pay, and gives management an accurate, real-time view of who is on site — all without requiring a change to how employees already move through the entrance each day.
+
+\section{Scope and Limitations}
+
+The system covers card-based arrival and departure logging for a single entrance, student/employee registration, event management (so attendance can be scoped to a shift, orientation day, or other defined period), and a dashboard showing live Present/Left/Absent status. It does not, in its current form, perform biometric verification, so it cannot fully rule out one employee tapping in for another if a card is shared voluntarily — a limitation shared with every RFID-only system and discussed further as an area for future work in Chapter 5. It also does not yet push attendance data directly into a payroll or HR system; that integration is addressed as a partially achieved objective in Chapter 4. The project was built and demonstrated on a single reader station during the attachment period; scaling to multiple entrances is a straightforward extension of the same architecture but was outside the time available for this attachment.
+
+\section{Structure of the Report}
+
+The remainder of this report is organised as follows. Chapter 2 reviews existing literature on RFID-based attendance systems, the trade-offs between RFID and biometric approaches, and offline-first design for embedded devices. Chapter 3 describes the methodology: the system architecture, hardware selection and wiring, the custom PCB, the software stack, and the bill of quantities for the components purchased. Chapter 4 presents the results, evaluating the finished system against each objective set out above. Chapter 5 concludes the report and gives recommendations for future work, along with the project timeline.

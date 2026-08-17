@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Dark-only green theme. No light-mode variant is defined on purpose —
+   the app always renders dark regardless of OS/browser preference. */
+:root {
+  --background: #0a0f0c;
+  --surface: #101712;
+  --surface-raised: #16201a;
+  --border: #22322a;
+  --foreground: #e7f3ec;
+  --muted: #8fa79a;
+
+  --primary: #22c55e;
+  --primary-strong: #16a34a;
+  --primary-soft: #14532d;
+  --primary-foreground: #052e16;
+
+  --danger: #f87171;
+  --warning: #facc15;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  .input {
+    @apply rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none;
+  }
+  .input:focus {
+    @apply border-primary;
+  }
+}

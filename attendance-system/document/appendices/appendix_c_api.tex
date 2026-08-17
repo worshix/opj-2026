@@ -1,0 +1,31 @@
+\chapter{PC Application API Reference}
+\label{app:api}
+
+Table~\ref{tab:full-api} lists every route implemented in the Next.js application, including the device-facing endpoints introduced in Chapter 3 and the dashboard-facing endpoints used only by the browser-based UI.
+
+\begin{table}[H]
+    \centering
+    \caption{Full API route listing}
+    \label{tab:full-api}
+    \begin{tabular}{@{}p{2.4cm}p{4.3cm}p{6.3cm}@{}}
+        \toprule
+        \textbf{Method} & \textbf{Route} & \textbf{Purpose} \\
+        \midrule
+        GET & /api/health & Liveness check consumed by the reader station's App LED logic \\
+        POST & /api/tap & Accepts one live tap (card UID, optional timestamp) from the reader \\
+        POST & /api/sync & Accepts a batch of queued taps replayed after reconnection \\
+        GET & /api/cards & Returns all known card UIDs for the reader's local cache \\
+        GET & /api/students & Lists all registered students \\
+        POST & /api/students & Registers a new student (name, registration number, card UID) \\
+        GET, PATCH, DELETE & /api/students/[id] & Fetch, update, or remove a single student record \\
+        GET & /api/events & Lists all attendance events \\
+        POST & /api/events & Creates a new event and marks it active \\
+        GET & /api/events/active & Returns the currently active event, if any \\
+        POST & /api/events/[id]/end & Ends the specified event \\
+        GET & /api/unknown-taps & Lists unacknowledged taps from unrecognised card UIDs \\
+        POST & /api/unknown-taps/[id]/ack & Acknowledges an unknown-tap alert once actioned from the dashboard \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The four device-facing routes at the top of the table are the only ones the ESP32 firmware calls; all other routes are used exclusively by the dashboard's browser-side pages.

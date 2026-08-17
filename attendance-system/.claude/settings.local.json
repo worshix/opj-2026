@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"C:\\\\Users\\\\worsh\\\\business\\\\opj\\\\2026-aug\\\\attendance-system\\\\attendance-application\" log --oneline -20)",
+      "Bash(git -C \"C:\\\\Users\\\\worsh\\\\business\\\\opj\\\\2026-aug\\\\attendance-system\\\\attendance-application\" status)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm approve-builds *)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm exec *)",
+      "WebFetch(domain:pris.ly)",
+      "WebFetch(domain:www.prisma.io)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm dev *)",
+      "Bash(curl -s -o /dev/null -w \"home: %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"students: %{http_code}\\\\n\" http://localhost:3000/students)",
+      "Bash(curl -s -o /dev/null -w \"events: %{http_code}\\\\n\" http://localhost:3000/events)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:3000/api/cards)",
+      "Bash(curl -s -X POST http://localhost:3000/api/students -H \"Content-Type: application/json\" -d '{\"name\":\"Jane Doe\",\"regNumber\":\"REG-0001\",\"cardUid\":\"A1B2C3D4\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/events -H \"Content-Type: application/json\" -d '{\"name\":\"Orientation Day\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/tap -H \"Content-Type: application/json\" -d '{\"uid\":\"A1B2C3D4\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/tap -H \"Content-Type: application/json\" -d '{\"uid\":\"DEADBEEF\"}')",
+      "Bash(curl -s http://localhost:3000/api/events/active)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3000/api/students)",
+      "Bash(curl -s http://localhost:3000/api/events)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, StartTime, Path\" 2>&1)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='node.exe'\\\\\" | Select-Object ProcessId, CommandLine | Format-List\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 20064,7044,22884,20900,22088,10136 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(rm -f dev.db dev.db-journal)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/students/cmssg2cni0000uwn3580boet2 -w \"\\\\nstatus: %{http_code}\\\\n\")",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/students/does-not-exist -w \"\\\\nstatus: %{http_code}\\\\n\")",
+      "Read(//c/Users/worsh/Documents/**)",
+      "Read(//c/Users/worsh/**)",
+      "Bash(convert -version)",
+      "Bash(magick -version)"
+    ]
+  }
+}

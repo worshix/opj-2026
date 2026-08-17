@@ -1,0 +1,65 @@
+\chapter{Conclusion and Recommendations}
+\label{ch:conclusion}
+
+\section{Conclusion}
+
+This project set out to replace a paper attendance register at Infor Relay Systems (Pvt) Ltd with a system that captures arrival and departure automatically, accurately, and in a way that front-desk staff could trust even when the network was not cooperating. The Real-Time RFID Employee Attendance System built during this attachment does exactly that: an ESP32 reader station with an MFRC522 module captures each tap, stores it to local flash before attempting to forward it, and syncs automatically once connectivity returns; a Next.js application on a PC turns those taps into a live Present/Left/Absent dashboard backed by a small, well-structured SQLite database.
+
+Chapter 4 showed that the first objective — automating attendance tracking — was fully achieved, and demonstrated with real taps during an on-site test event. The second objective, accurate labour costing, was substantially achieved: every timestamp needed to calculate hours worked is now captured automatically and precisely, even though the wage-calculation step itself was left for a payroll process outside this system. The third objective, integrating with existing systems, was met only at the architectural level — the API and database are ready to be consumed by a payroll or HR tool, but that integration was not built or tested during the attachment period. Reporting that honestly here, rather than overstating it, is intentional: it is exactly the kind of gap a reader of this report needs to know about before treating the system as production-complete.
+
+More broadly, the project confirms what the literature in Chapter 2 suggested: RFID is a fast, inexpensive, and well-proven way to automate attendance capture, and the harder engineering problem is not reading the card, it is keeping the system trustworthy when the network cannot be relied on. Designing for that from the start — rather than adding it later — is the main technical contribution of this attachment project.
+
+\section{Recommendations}
+
+The following recommendations follow directly from the limitations identified in Chapters 1, 3, and 4, and from a number of design decisions that were deliberately left open during this attachment for a future iteration to settle:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Build the payroll/HR integration.} The API already exposes everything a payroll system would need; the next step is a direct feed — a scheduled export or a live API integration — into whichever payroll tool Infor Relay Systems (Pvt) Ltd uses, so Objective 3 moves from architecturally ready to fully delivered.
+    \item \textbf{Add automatic hours-worked calculation.} A simple report that turns each student's \texttt{arrivedAt}/\texttt{leftAt} pair into total hours for a pay period would close the remaining gap in Objective 2 without requiring any change to the data already being captured.
+    \item \textbf{Decide the duplicate-tap policy explicitly.} Currently, a third tap after both arrival and departure are recorded is acknowledged with a distinct beep but makes no change to the record. Whether a genuine re-entry (for example, leaving briefly and returning) should update the record is a policy decision for management, not a technical one, and should be settled before wider rollout.
+    \item \textbf{Consider a second factor for higher-risk areas.} As discussed in Chapter 2, RFID alone cannot prevent a card being knowingly handed to a colleague. For entrances where that risk matters more, pairing the existing reader with a low-cost fingerprint module would close that gap without discarding the RFID infrastructure already built.
+    \item \textbf{Scale to multiple entrances.} The architecture already supports this with no redesign — each additional reader station is simply another ESP32 talking to the same PC application — but it has not yet been tested with more than one station running concurrently.
+    \item \textbf{Tune the card-cache and reset-button behaviour from real usage data.} The 60-second card-sync interval and the reset button's "clear queue and re-pull cards" behaviour were reasonable defaults chosen during development; both are worth revisiting once there is real deployment data on how often cards are registered and how often the reset button actually gets used.
+\end{enumerate}
+
+\section{Project Timeline}
+
+Figure~\ref{fig:gantt} shows the schedule followed during the attachment, from initial problem analysis in early May through to final report writing in July. The literature review is shown running for the full duration of the project rather than as a single early task, since relevant sources — particularly around offline-first design patterns — continued to be consulted throughout implementation, not only at the planning stage.
+
+\begin{figure}[H]
+    \centering
+    \begin{ganttchart}[
+        hgrid,
+        vgrid,
+        x unit=0.62cm,
+        y unit chart=0.7cm,
+        bar/.append style={fill=blue!35},
+        bar height=0.55,
+        group/.append style={fill=orange!45},
+        group height=0.55,
+        title height=1,
+        title label font=\scriptsize,
+        bar label font=\scriptsize,
+        group label font=\scriptsize\bfseries
+    ]{1}{13}
+        \gantttitle{May}{4}
+        \gantttitle{June}{5}
+        \gantttitle{July}{4} \\
+        \gantttitlelist{1,...,13}{1} \\
+        \ganttgroup{Literature Review}{1}{13} \\
+        \ganttbar{Problem analysis \& requirements}{1}{2} \\
+        \ganttbar{Component sourcing}{2}{3} \\
+        \ganttbar{Circuit schematic (Proteus)}{3}{4} \\
+        \ganttbar{PCB design \& fabrication}{4}{6} \\
+        \ganttbar{Firmware: RFID, LCD, buzzer, LEDs}{5}{7} \\
+        \ganttbar{Firmware: Wi-Fi, mDNS, offline queue}{7}{8} \\
+        \ganttbar{Next.js API \& database}{6}{9} \\
+        \ganttbar{Dashboard UI}{9}{10} \\
+        \ganttbar{Hardware assembly \& enclosure}{8}{9} \\
+        \ganttbar{Integration testing}{10}{11} \\
+        \ganttbar{On-site deployment \& field testing}{11}{12} \\
+        \ganttbar{Report writing}{11}{13}
+    \end{ganttchart}
+    \caption{Project Gantt chart, May to July, with the literature review spanning the full project duration}
+    \label{fig:gantt}
+\end{figure}

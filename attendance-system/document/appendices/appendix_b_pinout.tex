@@ -1,0 +1,42 @@
+\chapter{ESP32 Pinout and Power Budget}
+\label{app:pinout}
+
+\section*{Pinout Table}
+
+Table~\ref{tab:pinout} lists every wired connection between the ESP32 and the rest of the reader station circuit. GPIO choices deliberately avoid the ESP32's input-only pins (34--39) and its boot-strapping pins (0, 2, 5, 12, 15), so nothing on this board can interfere with the module's boot sequence.
+
+\begin{table}[H]
+    \centering
+    \caption{ESP32-WROOM-32 pin assignments}
+    \label{tab:pinout}
+    \begin{tabular}{@{}p{3.4cm}p{2.8cm}p{1.8cm}p{5.3cm}@{}}
+        \toprule
+        \textbf{Component} & \textbf{Pin on component} & \textbf{ESP32 GPIO} & \textbf{Notes} \\
+        \midrule
+        RC522 (RFID reader) & SDA (SS/CS) & GPIO 4 & Chip select, moved off GPIO 21 to free the I2C bus \\
+        RC522 & SCK & GPIO 18 & VSPI clock (fixed) \\
+        RC522 & MOSI & GPIO 23 & VSPI MOSI (fixed) \\
+        RC522 & MISO & GPIO 19 & VSPI MISO (fixed) \\
+        RC522 & IRQ & Not connected & Not used; polling mode \\
+        RC522 & RST & GPIO 16 & Moved off GPIO 22 to free the I2C SCL \\
+        RC522 & VCC & 3.3\,V & Must not be powered from 5\,V \\
+        Wi-Fi status LED & Anode & GPIO 25 & Through current-limiting resistor \\
+        App-reachable LED & Anode & GPIO 26 & Through current-limiting resistor \\
+        Buzzer & Signal & GPIO 27 & Active buzzer, direct digital drive \\
+        Reset button & One leg & GPIO 32 & \texttt{INPUT\_PULLUP}, active-low, other leg to GND \\
+        LCD 16x2 I2C & SDA & GPIO 21 & I2C data line \\
+        LCD 16x2 I2C & SCL & GPIO 22 & I2C clock line \\
+        LCD 16x2 I2C & VCC & 5\,V & Powers panel and backlight \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section*{Voltage and Power Notes}
+
+\begin{itemize}
+    \item The RC522 module requires a strict 3.3\,V supply. Several inexpensive breakout boards are silkscreened as tolerating 3.3--5\,V, but the MFRC522 chip itself does not, and running it from 5\,V risks permanent damage \parencite{nxp2016mfrc522}.
+    \item The ESP32's GPIOs are 3.3\,V logic and are not 5\,V tolerant. The I2C LCD backpack is powered from the ESP32's 3.3\,V rail rather than 5\,V specifically to keep its SDA/SCL pull-up levels within a safe range for the ESP32's I2C pins.
+    \item Standard 5\,mm LEDs are driven through a 220\,$\Omega$ series resistor from their respective GPIO, giving a safe, clearly visible drive current of approximately 5\,mA.
+    \item The active buzzer draws under 30\,mA, comfortably within a single GPIO's direct-drive capability, so no transistor switching stage was required.
+    \item Total current draw across the RC522, both LEDs, the buzzer, the LCD backlight, and the ESP32 itself under active Wi-Fi transmission stays well within the output capability of the 5\,V rail supplied by the LM2596 buck converter described in Chapter 3.
+\end{itemize}

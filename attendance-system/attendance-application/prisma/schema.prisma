@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Student {
+  id        String             @id @default(cuid())
+  name      String
+  regNumber String             @unique
+  cardUid   String             @unique
+  createdAt DateTime           @default(now())
+  records   AttendanceRecord[]
+}
+
+model Event {
+  id        String             @id @default(cuid())
+  name      String
+  startedAt DateTime           @default(now())
+  endedAt   DateTime?
+  isActive  Boolean            @default(true)
+  records   AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        String    @id @default(cuid())
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String
+  event     Event     @relation(fields: [eventId], references: [id])
+  eventId   String
+  arrivedAt DateTime?
+  leftAt    DateTime?
+
+  @@unique([studentId, eventId])
+}
+
+// A tap from a card UID with no matching Student. Surfaced on the dashboard
+// as a toast with a "Register" action; acknowledged once the admin has seen
+// or actioned it.
+model UnknownTap {
+  id           String   @id @default(cuid())
+  cardUid      String
+  tappedAt     DateTime
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}

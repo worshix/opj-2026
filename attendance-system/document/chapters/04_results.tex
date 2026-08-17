@@ -1,0 +1,72 @@
+\chapter{Results}
+\label{ch:results}
+
+\section{Introduction}
+
+This chapter presents the finished system as it was tested and demonstrated at Infor Relay Systems (Pvt) Ltd, and then evaluates it directly against the three objectives set out in Chapter 1. Screenshots throughout this chapter were captured during a live test event, run on-site to confirm the whole pipeline — card tap, reader feedback, network delivery, and dashboard update — worked together outside of the lab setting it was developed in.
+
+\section{The Finished Hardware}
+
+Figure~\ref{fig:finished-hardware} shows the assembled reader station in its enclosure, built on the custom PCB described in Chapter 3. The LCD sits at the top for at-a-glance feedback, with the two status LEDs mounted directly beneath it and the RFID reader positioned behind the front face of the enclosure, immediately below the printed tap icon, so a card only needs to be held against that marked area to register a read.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{finished_hardware.jpeg}
+    \caption{The completed reader station, enclosed and ready for deployment at the entrance}
+    \label{fig:finished-hardware}
+\end{figure}
+
+\section{The Dashboard Application}
+
+\subsection{Events}
+
+Figure~\ref{fig:events-screenshot} shows the Events screen used to start and end an attendance period. For the on-site test, an event named "Orientation day" was started at 07:41:30 on 14 August 2026; every tap recorded afterwards was automatically attributed to this event until it was explicitly ended, matching the event-lifecycle behaviour described in Chapter 3.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{events.png}
+    \caption{Events screen: creating and monitoring the active attendance event}
+    \label{fig:events-screenshot}
+\end{figure}
+
+\subsection{Student Registration}
+
+Figure~\ref{fig:students-screenshot} shows the Students screen, where each employee is registered with a name, a registration number, and the UID of the card issued to them. Three students were registered for the test: Dennis (card UID \texttt{AAC06606}), Hwinza (\texttt{53EAB814}), and Job (\texttt{539CF8F4}). This is also the screen an administrator is taken to when they act on an unknown-card alert from the dashboard, with the scanned UID pre-filled so it does not need to be typed in by hand.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{students.png}
+    \caption{Students screen: registering a card UID against a name and registration number}
+    \label{fig:students-screenshot}
+\end{figure}
+
+\subsection{Live Attendance Dashboard}
+
+Figure~\ref{fig:dashboard-screenshot} shows the dashboard partway through the test event. Dennis had tapped in at 07:41:47 and not yet tapped out, so he is shown as \textit{Present}. Hwinza and Job had each tapped in and then out again, so both are shown as \textit{Left}, with their exact arrival and departure times recorded to the second. No student shows as \textit{Absent} in this view because all three registered cards had been tapped at least once by the time the screenshot was taken.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{dashboard.png}
+    \caption{Live dashboard for the active event, showing computed Present / Left / Absent status per student}
+    \label{fig:dashboard-screenshot}
+\end{figure}
+
+\section{Evaluation Against Objectives}
+
+\subsection{Objective 1: Automating Attendance Tracking}
+
+This objective was achieved. Figure~\ref{fig:dashboard-screenshot} demonstrates arrival and departure being captured automatically, to the second, with no manual data entry involved beyond the initial one-time registration of each card in Figure~\ref{fig:students-screenshot}. The tap-handling logic in Figure~\ref{fig:tap-flowchart} runs identically whether the reader is online or replaying a queued tap from its offline store, so the same automation holds even through a network interruption — the specific failure mode manual registers and always-online competitor systems alike do not handle gracefully, as discussed in Chapter 2.
+
+\subsection{Objective 2: Ensuring Accurate Labour Costing}
+
+This objective was substantially achieved. The \texttt{arrivedAt} and \texttt{leftAt} timestamps visible in Figure~\ref{fig:dashboard-screenshot} are precise to the second and are written the moment a tap is processed, not reconstructed later from memory or a supervisor's estimate — directly addressing the "incorrect attendance records" and payroll-reconciliation problem identified in the Chapter 1 problem statement. What was not built during this attachment is an automatic hours-worked or wage calculation on top of those timestamps; the dashboard reports status and exact times, and a payroll clerk would still need to derive total hours from them, either manually or through a short script against the underlying data. That gap is carried forward as a recommendation in Chapter 5 rather than claimed as solved here.
+
+\subsection{Objective 3: Integrating RFID Attendance with Existing Systems}
+
+This objective was only partially achieved, and it is worth being direct about that rather than overstating the result. The system exposes its data through a documented set of API endpoints (Table~\ref{tab:api-endpoints}, Appendix~\ref{app:api}) and a SQLite database that any payroll or HR tool capable of making an HTTP request or reading a database file could, in principle, consume. However, no such integration with Infor Relay Systems (Pvt) Ltd's actual payroll process was implemented or tested within the scope of this attachment — the "existing systems" referred to in the original objective were not accessible for direct integration during the project timeline. What was achieved is a system that is architecturally ready for that integration, rather than one where the integration itself is complete. This distinction, and what a follow-up phase of integration work would involve, is discussed further in Chapter 5.
+
+\section{Discussion}
+
+Across the on-site test, the offline-first design held up as intended: taps made while the reader's App-reachable LED was off were confirmed, after the fact, to have been queued locally and delivered automatically once the PC application came back within reach, with no gap in the resulting attendance record. The two-LED status indicator also proved useful in practice during setup, immediately showing when the issue was a Wi-Fi credential problem rather than the Next.js application not yet being started on the PC — a distinction that would otherwise have taken longer to diagnose by trial and error.
+
+Taken together, the results show a system that meets its core aim of automated, accurate, real-time attendance capture, with the labour-costing objective met at the data level and the systems-integration objective met at the architectural level but not yet in a live production integration. Both of the partially met objectives point directly to the recommendations set out in the next chapter.
