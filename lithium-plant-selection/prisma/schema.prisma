@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Mine {
+  id            Int    @id @default(autoincrement())
+  name          String
+  lat           Float
+  lon           Float
+  annualSupplyT Float
+  gradeNote     String @default("")
+}
+
+model Site {
+  id                     Int     @id @default(autoincrement())
+  name                   String
+  lat                    Float
+  lon                    Float
+  capacityT              Float
+  waterMLPerDay          Float
+  gridReliability        Float
+  distanceToSettlementKm Float
+  distanceToRailKm       Float
+  distanceToSubstationKm Float
+  roadQuality            Float
+  onProtectedLand        Boolean
+  protectedAreaBufferKm  Float
+  landAreaHa             Float
+  landPriceUsdPerHa      Float
+  slopeIndex             Float
+  labourIndex            Float
+  envSensitivity         Float
+  seismicRisk            Float
+  tailingsSuitability    Float
+  fixedOpexUsd           Float
+}
+
+model Criterion {
+  id        Int     @id @default(autoincrement())
+  name      String
+  grp       String
+  fieldKey  String
+  direction String
+  min       Float
+  max       Float
+  weight    Float
+  unit      String  @default("")
+  definition String @default("")
+  evidence   String @default("")
+  source     String @default("")
+}
+
+model Scenario {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  result    String
+}

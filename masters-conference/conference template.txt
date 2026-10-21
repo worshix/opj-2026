@@ -1,0 +1,111 @@
+
+--- PAGE 1 ---
+PAPER TITLE
+Full Name1, Full Name2, Full Name3
+1 Organization, 2 Organization, 3 Organization
+City, Country
+1Belarusian National Technical University Minsk, Republic of Belarus, 2Harare Institute of Technology, Harare,
+Zimbabwe
+Abstract. Abstract up to 100 words. The article explores the application of electronic tools in coaching control for
+volleyball competitions, including video analysis, biomechanical systems, physical activity trackers, as well as the
+use of artificial intelligence and statistical analysis. Key areas of technology application are described, such as
+tactical and technical evaluation, physical condition monitoring, and training process individualization. The
+relevance of this research is substantiated by factors such as increased sports competition, workload
+individualization, advancements in sports medicine, and the growing accessibility of digital technologies. The
+article identifies key research tasks, including the development of video analysis models, assessment of wearable
+sensor effectiveness, AI-based game situation prediction, and the impact of electronic tools on team interaction
+and psychological preparation. The conclusion highlights the importance of integrating advanced technologies to
+enhance the training process efficiency and ensure athlete safety.
+Key words: Key words up to 5 words. digital technology, electronic tools, training control in volleyball.
+Address for correspondence: Pantsialeyeu K., Prospekt Nezavisimosti, 65, Minsk 220113, Republic of Belarus
+e-mail: k.pantsialeyeu@bntu.by
+The template is designed to prepare these 0, 𝑥 ∈[0,𝑙),
+−{ 𝑥 ∈[0,𝑙], (2)
+materials for printing. The volume of materials 𝑣, 𝑥 =𝑙,
+should be TWO full pages (A4 format).
+α(𝑡)𝜕 𝑢(𝑡,γ(𝑡))+β(𝑡)𝜕 𝑢(𝑡,γ(𝑡))+
+Document formatting. Document margins: top 𝑡 𝑥
+— 2.5 cm, right — 2.0 cm, bottom — 3.0 cm, left — + θ(𝑡)𝑢(𝑡,γ(𝑡))=μ (𝑡), 𝑡 ∈[0,∞), (3)
+1
+3.0 cm. Line spacing — single. Do not include page
+numbers. First line indent — 0.5 cm (main text). 𝜕2𝑢(𝑡,𝑥 =𝑙)+λ𝜕 𝑢(𝑡,𝑥 =𝑙)=
+𝑡 𝑥
+The text is typed in two columns, column width
+=μ (𝑡), 𝑡 ∈[0,∞), (4)
+7.5 cm, distance between columns 1 cm. 2
+The title of the report, authors, name of the where γ(0)=0, 𝛾′(𝑡)∈(−𝑎,𝑎), 𝑡 ∈[0,∞), the
+organization and the main text are printed in Times curves 𝑥 =γ(𝑡) and 𝑥 =𝑙 do not intersect, the
+New Roman 10 pt. boundary condition (3) is nowhere characteristic, i.e.,
+The text must be printed with hyphens (hyphens α(𝑡)≠𝑎−1β(𝑡), 𝑡 ∈[0,∞).
+in the title are not allowed). To improve the structure, Figures and tables. Figures should be black and
+the text can be divided into sections (Purpose, white or halftone (grayscale). Scanned images should
+Methods, etc.). Sections are not numbered. The title have a resolution of at least 300 dpi. Text in figures
+of the report and section headings are printed in bold, should be clear, text size should be legible. Tables
+straight font. should not duplicate graphs. Tables and figures
+Formulas. When formatting mathematical follow their mention in the text. Each table and figure
+formulas, use Times New Roman and Symbol fonts. has a title. When referring to the text: "in Figure 1"
+Formulas are centered and have an additional 5 pt and "in Table 1". The title of the tables and captions
+space above and below the main text. The formula under the figures are formatted in Times New Roman
+number is located in the right margin and is enclosed 9 pt. Figures and tables are centered and spaced with
+in parentheses (1). Formulas must be followed by a an additional 5 pt interval above and below the main
+comma or a period if the formula is at the end of a text.
+sentence. Formulas must be numbered sequentially.
+References to formulas in the text are enclosed in
+parentheses.
+(𝜕2−𝑎2𝜕2)𝑢(𝑡,𝑥)=𝑓(𝑡,𝑥),
+𝑡 𝑥
+𝑡 >0, 𝑥 ∈(γ(𝑡),𝑙), (1)
+𝑢(0,𝑥)=φ(𝑥), 𝜕 𝑢(0,𝑥)=ψ(𝑥)−
+𝑡
+--- PAGE 2 ---
+1. Collins, D. Performance psychology:
+A practitioner's guide / D. Collins, A. Button, R. Richards.
+– England: Oxford, 2011. – 812 p.
+2. Computer Science in Sport: Research and practice;
+ed. By A. Baca. – London: Routledge, 2015. – 237 p.
+3. Routledge Handbook of Sports Performance
+Analysis; ed. by T. McGarry, P. O'Donoghue, J. Sampaio.
+– London: Routledge, 2015. – 512 p.
+3. Electromagnetic shock wave generator with a re-
+flector: pat. RU 2122363, Y. V. Andrianov, O. N. Andrianova,
+K. G. Bagaudinov, B. A. Garilevich. – Publ. 11.27.98.
+4. Shmagoy, V. L. The place of shock wave therapy in
+postoperative rehabilitation of patients with disorders of re-
+Figure 1 – An electromagnetic shock wave generator
+parative osteogenesis after fractures of the shin bones / V.
+L. Shmagoy, R. G. Rodak, V. V. Karas // Medicine of
+Table 1 – Geometrical parameters of proposed antenna transport in Ukraine. – 2014. – № 4. – P. 58–63.
+Parameter Wsub Lsub Wp Lp Lf 5. Stimulation of peripheral nerve regeneration: cur-
+Value(mm) 61.68 59.019 35.96 33.30 17.74 rent state, problems and prospects / I. N. Shchanitsyn [et al.]
+Parameter Wf Lg Wg Lg1 Wg1 // Successes of physiological sciences. – 2017. – V. 48,
+Value(mm) 4.84 18 61.68 12 6 № 3. – P. 92–112.
+Parameter L1 W1 L2 W2 6. Shock wave therapy in the complex treatment and
+Value(mm) 3 20 10 3 rehabilitation of patients with coronary artery disease with re-
+fractory angina pectoris / A. M. Shchegolkov [et al.] // Bulle-
+The device works as follows (Figure 2). A high- tin of Restorative Medicine. – 2014. – № 6. – P. 69–75.
+amplitude current pulse flows through the inductor,
+which leads to the appearance of a magnetic field
+around the conductor.
+Figure 2 – Block diagram of the shock wave head
+References. The list of references is compiled in
+the order of citation of references in the text, must
+contain full bibliographic data and is given at the end
+of the article. References in the text are enclosed in
+square brackets [1; 3–5].
+The list of references should be placed at the end
+of the report under the heading – References,
+formatted using Times New Roman 9 pt, single-
+spaced. The heading is centered and separated by an
+additional line spacing of 5 pt. above and below the
+main text. For sources published in translated
+journals, please provide English titles and a reference
+in a foreign language.
+Acknowledgments. They are indicated at the end
+of the text, for example:
+The report was published with the financial
+support of the Ministry of Science and Higher
+Education of the Russian Federationn Federation
+within the program of the Moscow Center of Funda-
+mental and Applied Mathematics under the agree-
+ment № 075-15-2022-284.
+References

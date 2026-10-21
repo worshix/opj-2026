@@ -1,0 +1,462 @@
+
+--- PAGE 1 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF
+INDUSTRIAL MOTORS USING ELECTRICAL CURRENT AND
+VIBRATION SIGNALS
+Takunda Pambayi
+Harare Institute of Technology, Harare, Zimbabwe
+Journal Paper – Revised Research Draft
+Research status: design and validation framework with worked engineering calculations. No unverified experimental
+results are presented as measured data.
+1
+--- PAGE 2 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+Abstract
+Industrial induction motors are essential prime movers in manufacturing plants, and failure of a single motor can
+interrupt a complete process section. Conventional preventive maintenance is commonly based on calendar
+intervals, operating hours and technician experience. Although useful, this approach does not continuously
+reflect the actual condition of the machine. This paper develops a practical PLC-based multi-sensor condition-
+monitoring framework that combines motor electrical current and mechanical vibration measurements. The
+proposed architecture separates sensing, signal conditioning, feature extraction, PLC decision-making and
+HMI/SCADA visualization. Current RMS, phase-current imbalance, vibration RMS, peak value, crest factor and
+selected frequency-domain components are used as condition indicators. A transparent sensor-fusion method is
+introduced in which normalized electrical and vibration indicators are combined before a normal, warning or
+critical state is assigned. The paper also provides worked calculations for RMS current, current imbalance,
+vibration RMS, crest factor, FFT frequency resolution and a weighted condition score. These calculations
+demonstrate how raw measurements can be converted into engineering quantities suitable for PLC
+implementation. An experimental validation procedure is defined for healthy operation, controlled mechanical
+faults, increased load and selected electrical abnormalities, with detection rate, false-alarm rate, detection
+latency and monitoring availability proposed as evaluation metrics. The approach is intended for industrial
+applications where PLC and HMI infrastructure already exists and where a specialist condition-monitoring
+platform may be economically or technically impractical. The contribution is therefore not a claim of completed
+fault-classification performance, but a reproducible engineering framework that can be implemented and
+experimentally validated on industrial motor-driven equipment.
+Keywords: PLC; condition monitoring; induction motor; motor current signature analysis; vibration analysis;
+multi-sensor fusion; predictive maintenance; industrial automation.
+1. Introduction
+Electric motors are fundamental to modern production systems because they provide the mechanical power
+required by pumps, compressors, fans, conveyors and process machinery. The reliability of these machines is
+consequently linked to production availability, maintenance cost and process continuity. Motor condition
+monitoring has developed from periodic inspection toward online measurement of electrical, mechanical and
+thermal variables. Current signature analysis is particularly attractive because stator current can be measured
+without direct access to the rotating shaft, whereas vibration provides a direct indication of mechanical
+behaviour (Benbouzid, 2000; Gangsar and Tiwari, 2020).
+The limitation of relying on a single measurement is that different fault mechanisms can produce overlapping
+symptoms. A rise in vibration may be associated with imbalance, misalignment, looseness or bearing
+deterioration, while an increase or distortion in current may result from loading, supply imbalance, electrical
+faults or electromechanical coupling. Research has therefore investigated combinations of current and vibration
+information for online diagnosis (Yang and Kim, 2006). More recent reviews also show continued development
+of current-signature methods, including approaches for variable-speed operation where fixed spectral features
+can become difficult to interpret (Niu, 2023; Yakhni et al., 2023).
+Industrial automation provides an opportunity to move part of this diagnostic process into equipment that
+already exists in many factories. PLCs are routinely used for motor starting, sequencing, interlocking, protection
+signals and process supervision. Integrating condition indicators with the PLC therefore reduces the separation
+between production control and maintenance information. The proposed work addresses this practical
+implementation problem by developing a PLC-centred architecture in which current and vibration information
+are processed into transparent condition indicators.
+1.1 Problem Statement
+Many industrial maintenance programmes still depend on fixed inspection intervals or respond after abnormal
+equipment behaviour has become visible. Such approaches can miss developing faults between inspections and
+2
+--- PAGE 3 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+may result either in premature maintenance or in unexpected breakdowns. Specialist condition-monitoring
+systems can provide more information, but their cost, integration requirements and dependence on specialist
+software may limit adoption in smaller manufacturing facilities. The engineering problem addressed in this
+paper is therefore the design of a practical, low-complexity monitoring system that combines electrical and
+mechanical evidence and presents an interpretable decision through a PLC and HMI.
+1.2 Aim and Objectives
+The aim is to develop and define a PLC-based multi-sensor condition-monitoring system for industrial induction
+motors using electrical current and vibration signals.
+• Develop a sensing architecture for simultaneous acquisition of motor current and vibration.
+• Define time-domain and frequency-domain features suitable for condition assessment.
+• Develop a transparent PLC decision and sensor-fusion method for normal, warning and critical states.
+• Develop an HMI/SCADA presentation structure for trends, alarms and maintenance information.
+• Define a controlled experimental procedure for comparing current-only, vibration-only and fused
+monitoring.
+• Establish objective performance measures including detection rate, false-alarm rate and detection latency.
+2. Literature Review and Research Gap
+Condition monitoring methods for induction motors include temperature measurement, insulation testing,
+current signature analysis, vibration analysis, magnetic-flux monitoring, acoustic techniques and combinations
+of these signals. Gangsar and Tiwari (2020) reviewed signal-based monitoring and emphasized the value of both
+vibration and current measurements for electrical and mechanical fault diagnosis. Benbouzid (2000) established
+the basis of motor current signature analysis as a means of identifying abnormal conditions from the spectral
+content of stator current. These studies support the use of current as an online, non-invasive measurement
+channel.
+Vibration monitoring provides complementary mechanical information. Bearing defects, imbalance,
+misalignment and looseness can change both the magnitude and frequency content of the vibration signal. Yang
+and Kim (2006) demonstrated a data-fusion approach using vibration and current features for induction-motor
+fault diagnosis, providing a direct precedent for combining the two measurement domains. The advantage of the
+present work is to translate this multi-sensor principle into an automation-oriented PLC architecture rather than
+treating the diagnostic system only as an offline signal-processing exercise.
+Variable-speed operation introduces an additional challenge. Yakhni et al. (2023) note that transient motor-
+current signatures become more difficult to interpret when the operating point changes. VFD switching, load
+variation and speed changes can alter the measured spectrum. Therefore, the proposed system does not depend
+on one universal frequency peak. Instead, the operating state, baseline condition and multiple features are
+considered together.
+2.1 Comparison of Monitoring Approaches
+Approach Main measurement Main strength Main limitation
+Observation / physical Intermittent and operator-
+Manual inspection Low cost and familiar
+inspection dependent
+May not identify early
+Temperature Motor temperature Useful for thermal overload
+mechanical faults
+Strong sensitivity to Mounting and interpretation
+Vibration Accelerometer
+mechanical faults are important
+Non-invasive and suitable for Affected by load, speed and
+MCSA Stator current
+online monitoring power electronics
+3
+--- PAGE 4 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+Combines complementary More sensing and processing
+Multi-sensor Current + vibration
+evidence required
+Current + vibration + PLC Direct integration with Requires validated thresholds
+Proposed PLC system
+state automation and conditioning
+2.2 Research Gap
+The literature establishes that current and vibration contain complementary information, but there remains a
+practical implementation gap between advanced diagnostic research and the control architecture available on
+industrial floors. Many systems rely on specialist acquisition hardware, offline analysis or computationally
+intensive algorithms. The proposed research focuses on the intermediate engineering layer: extracting a small
+but meaningful set of indicators and implementing transparent decision logic at PLC level. This creates a
+pathway from conventional preventive maintenance toward condition-based maintenance without requiring
+immediate deployment of a complex machine-learning platform.
+3. Proposed System Architecture
+The system is organised into five functional layers: sensing, signal conditioning, feature extraction, PLC
+decision-making and operator visualization. The architecture is designed so that the PLC receives reliable
+condition indicators rather than attempting to process every high-frequency raw vibration sample. This is
+important because a conventional PLC is primarily a real-time control device, whereas high-resolution vibration
+processing can require significantly higher sampling and computational resources.
+Figure 1. Proposed PLC-based multi-sensor condition-monitoring architecture. The figure represents the proposed design and is not
+a measured experimental result.
+Current is measured using a suitable current transformer or Hall-effect sensor, depending on the motor rating
+and electrical arrangement. Vibration is measured using an accelerometer mounted consistently on the motor
+housing, preferably near the bearing location and in a defined radial direction. Sensor signals are isolated,
+filtered and scaled before analogue-to-digital conversion. Where the required vibration bandwidth is beyond the
+PLC analogue-input capability, an edge acquisition module can calculate features such as RMS, peak and
+spectral indicators before sending them to the PLC.
+3.1 Sensor Placement and Measurement Discipline
+Sensor mounting is an important part of the experimental method because vibration amplitude depends on
+location, mounting stiffness, direction and the surrounding mechanical structure. Measurements should therefore
+4
+--- PAGE 5 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+be taken from the same location and direction throughout the experiment. ISO 20816-1 provides general
+guidance on measurement and evaluation of machine vibration and emphasizes the importance of measurement
+conditions, quantities and operating state (ISO, 2016).
+Variable Recommended measurement discipline Purpose
+Same phase reference or all three phases
+Phase current Electrical loading and imbalance
+where available
+Vibration Fixed radial bearing-housing position Mechanical condition
+Speed/VFD frequency Logged with every feature window Operating-point reference
+Load Recorded or controlled during testing Separates fault effects from load effects
+Selected from highest frequency of
+Sampling rate Avoids aliasing
+interest
+Window length Fixed for each test condition Ensures comparable features
+4. Signal Processing and Engineering Calculations
+The monitoring system converts sampled signals into numerical features that can be interpreted by the PLC. The
+following calculations are central to the proposed method. Worked examples are included using explicitly
+illustrative data; they are not claimed to be measurements from the author's motor test rig.
+Figure 2. Proposed signal-processing chain from raw measurements to maintenance-oriented PLC decisions.
+4.1 Current RMS
+For a sampled current waveform containing N samples, the RMS current is calculated as:
+I_RMS = √[(1/N) Σ(i_k²)], k = 1, 2, …, N
+Consider the illustrative five-sample sequence 6.2, 6.5, 6.1, 6.4 and 6.3 A. The mean current is 6.30 A and the
+calculated RMS value is approximately 6.302 A. The RMS value provides a compact representation of current
+loading, but it should not be interpreted as a fault indicator by itself because a healthy motor can legitimately
+draw different current at different loads.
+4.2 Three-Phase Current Imbalance
+For three-phase measurements, a simple percentage current-imbalance indicator can be defined as the maximum
+deviation from the average divided by the average:
+I_imbalance (%) = [max|I_phase − I_avg| / I_avg] × 100
+5
+--- PAGE 6 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+As an illustrative example, if the three measured phase currents are 6.2, 6.4 and 6.0 A, the average is 6.20 A and
+the maximum deviation is 0.20 A. The resulting imbalance is approximately 3.23%. This calculation can be
+implemented in the PLC using three analogue channels and a small arithmetic routine.
+4.3 Vibration RMS and Crest Factor
+Vibration RMS represents the overall energy of the measured acceleration signal. For N samples:
+V_RMS = √[(1/N) Σ(x_k²)]
+The crest factor provides an additional indicator of impulsive behaviour:
+Crest Factor = Peak |x_k| / V_RMS
+Using the illustrative vibration samples [0.16, −0.19, 0.21, −0.18, 0.17, −0.20, 0.15, −0.22] g gives V_RMS ≈
+0.186 g and a crest factor of approximately 1.18. An increase in crest factor over a motor-specific baseline can
+be useful when developing bearing-fault indicators because impulsive events may increase peak acceleration
+more rapidly than overall RMS.
+4.4 Kurtosis
+Kurtosis can be used to identify departures from an approximately Gaussian vibration distribution. A simplified
+population form is:
+K = [ (1/N) Σ(x_k − μ)^4 ] / σ^4
+Because kurtosis is sensitive to outliers, it should be interpreted with adequate sample length and consistent
+sensor mounting. It is proposed here as a supplementary feature rather than a stand-alone alarm variable.
+4.5 Fast Fourier Transform and Frequency Resolution
+The FFT converts a sampled signal from the time domain into frequency-domain components. For a sampling
+frequency F_s and transform length N, the nominal frequency-bin spacing is:
+Δf = F_s / N
+For an illustrative acquisition system operating at 10 kHz with N = 2048 samples, Δf = 4.883 Hz. This
+calculation is important when selecting the acquisition parameters because insufficient frequency resolution can
+make neighbouring spectral components difficult to separate. The sampling frequency must also be sufficiently
+high relative to the highest frequency of interest to avoid aliasing.
+4.6 Normalised Condition Indicators
+To combine current and vibration measurements, each feature can be normalised against a healthy baseline. A
+simple engineering form is:
+C = clip[(X_c − X_base) / (X_warn − X_base), 0, 1]
+V = clip[(X_v − V_base) / (V_warn − V_base), 0, 1]
+Here C and V are normalized electrical and vibration indicators. The clip function restricts the value to the
+interval 0–1 for the basic implementation. Motor-specific baselines are preferred because motor size, mounting,
+speed and load affect the measured values.
+4.7 Sensor-Fusion Score
+A transparent weighted fusion score can then be calculated as:
+S = w_c C + w_v V, where w_c + w_v = 1
+As a worked example only, if C = 0.65, V = 0.85, w_c = 0.40 and w_v = 0.60, then S = 0.77. If an engineering
+validation programme defined S < 0.60 as normal, 0.60–0.80 as warning and S > 0.80 as critical, the worked
+6
+--- PAGE 7 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+example would fall in the warning band. These limits are illustrative and must not be transferred to a real motor
+without validation.
+5. PLC Decision Logic and HMI Design
+The PLC is responsible for deterministic classification, persistence timing, alarm handling and communication
+with the HMI. The design deliberately separates diagnostic warning thresholds from protective trip functions. A
+condition-monitoring alarm should not automatically become a motor trip unless the threshold has been
+validated for that specific machine and integrated with the approved protection philosophy.
+Figure 5. Illustrative PLC condition-classification logic. The final trip action must be validated separately from diagnostic alarms.
+Condition state Typical trigger PLC/HMI response
+Normal All valid indicators below warning limits Continue monitoring; green status
+One or more indicators above warning Alarm, trend logging and maintenance
+Warning
+level for persistence period notification
+Multiple abnormal indicators or validated Urgent maintenance alarm; trip/interlock
+Critical
+severe condition only where justified
+Sensor fault alarm; inhibit unreliable
+Sensor fault Missing, saturated or implausible signal
+diagnosis
+5.1 Persistence and False-Alarm Control
+Industrial measurements can contain short disturbances caused by switching, load changes or mechanical
+shocks. A practical PLC algorithm should therefore use persistence rather than reacting to one sample. For
+example, a warning may require the abnormal condition to remain present for several consecutive feature
+windows. The persistence time should be selected from the machine dynamics and the required response time
+rather than chosen arbitrarily.
+5.2 HMI Information Structure
+• Motor identification and running status.
+• Current RMS and, where available, three-phase current imbalance.
+7
+--- PAGE 8 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+• Vibration RMS, peak and crest factor.
+• Condition state and alarm status.
+• Trend history for the main condition indicators.
+• Last alarm, acknowledgement and maintenance action.
+• Sensor-health indication to prevent decisions based on invalid data.
+6. Experimental Validation Method
+The current manuscript is intentionally structured as a reproducible experimental design rather than presenting
+unmeasured values as results. A laboratory motor test rig or an approved industrial motor can be used. The
+motor should be operated first in a healthy state over a defined operating envelope, after which controlled
+abnormal conditions can be introduced one at a time. Electrical fault creation should only be performed using a
+safe laboratory arrangement under competent supervision.
+6.1 Experimental Stages
+• Record healthy current and vibration data at no-load and representative load points.
+• Record motor speed or VFD frequency simultaneously with the sensor data.
+• Calculate baseline mean, standard deviation and selected percentiles for each feature.
+• Introduce one controlled abnormal condition at a time, such as imbalance, misalignment or increased load.
+• Repeat measurements at more than one operating point to test robustness.
+• Compare current-only, vibration-only and fused decisions.
+• Measure detection rate, false-alarm rate, detection latency and monitoring availability.
+• Transfer validated thresholds and logic to the PLC and repeat the test in real time.
+6.2 Suggested Test Matrix
+Test case Operating condition Primary evidence Secondary evidence Expected use
+T1 Healthy / low load Stable current Stable vibration Baseline
+Current increase Vibration within
+T2 Healthy / rated load Load compensation
+consistent with load baseline
+Vibration at rotational
+T3 Controlled imbalance Current modulation Mechanical detection
+component
+Controlled Radial/axial vibration Mechanical-electrical
+T4 Current deviation
+misalignment change where measured coupling
+Increased mechanical Distinguish load from
+T5 Current RMS increase Load-related vibration
+load fault
+Electrical abnormality Current Possible vibration
+T6 Electrical diagnosis
+under safe test setup imbalance/distortion response
+Sensor Independent channel
+T7 Invalid signal Sensor-fault handling
+disconnection/saturation status
+7. Illustrative Analysis and Performance Metrics
+The figures in this section are demonstrations of the analysis workflow. They are generated from illustrative
+mathematical signals and are not measurements from the author's test rig. Replacing them with logged
+experimental data is a required step before journal submission.
+8
+--- PAGE 9 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+Figure 3. Illustrative time-domain vibration signals used only to demonstrate the distinction between a stable waveform and an
+abnormal waveform.
+Figure 4. Illustrative normalized current and vibration indicators demonstrating the proposed warning/critical decision concept.
+Values are not experimental measurements.
+7.1 Detection Metrics
+Once the experiment is completed, each monitoring window can be classified as normal or abnormal and
+compared with the known test condition. Detection rate, precision, false-alarm rate and latency should be
+calculated from the resulting confusion matrix.
+Detection rate = TP / (TP + FN)
+False-alarm rate = FP / (FP + TN)
+Precision = TP / (TP + FP)
+Detection latency = t_alarm − t_fault_onset
+9
+--- PAGE 10 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+These measures should be calculated separately for each fault class and operating condition rather than reporting
+one combined number only. A system that performs well at constant speed but generates excessive alarms
+during VFD operation should not be treated as equally reliable across the entire operating envelope.
+7.2 Worked Example of Classification Metrics
+To demonstrate the calculation method only, assume a hypothetical validation set contains 20 abnormal
+windows and 30 healthy windows. If 18 abnormal windows are correctly detected, 2 abnormal windows are
+missed, and 3 healthy windows generate false alarms, then TP = 18, FN = 2, FP = 3 and TN = 27. The
+illustrative detection rate is therefore 90.0%, while the false-alarm rate is 10.0% and precision is 85.7%. These
+numbers are mathematical examples and must not be reported as experimental performance.
+7.3 Monitoring Availability
+Monitoring availability (%) = [valid monitoring time / scheduled monitoring time] × 100
+This metric is important for an industrial deployment because a theoretically accurate algorithm is of limited
+practical value if sensor faults, communication interruptions or data-quality problems frequently remove it from
+service.
+8. Discussion
+The proposed architecture combines electrical and mechanical evidence rather than assuming that one
+measurement can explain every motor fault. Current information is valuable because it can be measured non-
+invasively and is related to electromagnetic loading, while vibration responds more directly to mechanical
+phenomena. The complementary nature of the signals is consistent with published research on combined current
+and vibration diagnosis (Yang and Kim, 2006; Gangsar and Tiwari, 2020).
+The PLC-centred implementation is particularly relevant to manufacturing environments because PLCs are
+already connected to motors, drives, protection devices and operator interfaces. The proposed architecture can
+therefore be added as a condition-monitoring layer without replacing the existing process-control system. Where
+raw vibration processing exceeds PLC capability, the architecture allows feature extraction to be performed at
+the edge while leaving deterministic alarm logic in the PLC.
+An important engineering issue is threshold selection. A single universal vibration or current limit can produce
+poor results because machines operate under different loads, speeds, mounting conditions and process duties.
+ISO 20816-1 emphasizes that vibration evaluation depends on defined measurement conditions and operating
+state (ISO, 2016). Similarly, current signatures can change with variable speed and transient operation, which
+supports the use of speed-aware or operating-state-aware baselines (Yakhni et al., 2023).
+The approach also offers a staged pathway toward predictive analytics. A first implementation can use
+transparent rules and trends. Once sufficient labelled data are accumulated, statistical models or machine-
+learning methods can be evaluated against the rule-based baseline. This avoids introducing artificial intelligence
+before the measurement system, data quality and maintenance workflow are reliable.
+8.1 Practical Industrial Benefits
+• Earlier visibility of abnormal motor behaviour.
+• Reduced dependence on intermittent manual inspection for continuously operating assets.
+• Better planning of maintenance interventions using trend information.
+• Use of existing PLC/HMI infrastructure rather than a completely separate monitoring platform.
+• Structured historical data for future predictive-maintenance development.
+• Potential reduction in unplanned downtime when alarms are acted upon appropriately.
+10
+--- PAGE 11 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+8.2 Limitations
+The principal limitation of the present manuscript is that the experimental campaign has not yet been completed;
+therefore, no numerical detection accuracy is claimed. Other limitations include sensor mounting sensitivity,
+environmental vibration, load dependence, VFD switching effects and the computational limits of conventional
+PLCs. Thresholds must be validated separately for each motor or motor class. Condition monitoring also
+provides evidence of abnormal behaviour rather than automatically proving the physical root cause.
+Maintenance personnel must therefore confirm the fault before major repair or replacement.
+9. Implementation Considerations for Industrial Deployment
+For a manufacturing plant, the first deployment should focus on critical motor-driven assets where downtime
+has a clear operational consequence. A practical pilot can begin with one motor, one current-sensing channel
+and one accelerometer, followed by expansion to multiple assets after the baseline and alarm logic have been
+validated.
+Implementation item Recommended engineering decision
+Select a critical motor with known operating history and stable
+Motor selection
+access
+Current sensor Use a properly rated isolated CT or Hall-effect sensor
+Vibration sensor Use an industrial accelerometer with repeatable mounting
+Sampling Set according to the highest diagnostic frequency of interest
+Feature layer Compute RMS, peak, crest factor and selected spectral indicators
+PLC Use analogue acquisition plus deterministic arithmetic/logic
+HMI Display condition state, trends and alarm history
+Data storage Store timestamp, motor ID, operating state and feature values
+Validation Calibrate thresholds against healthy baseline and controlled faults
+IEC 60034-1 specifies general requirements relating to rating and performance of rotating electrical machines;
+the latest IEC publication is IEC 60034-1:2026. Motor-specific protection, installation and test requirements
+should therefore be checked against the applicable equipment documentation and standards before field
+implementation (IEC, 2026).
+10. Conclusion
+This paper developed a PLC-based multi-sensor condition-monitoring framework for industrial induction
+motors using electrical current and vibration signals. The principal engineering proposition is that
+complementary electrical and mechanical evidence can be converted into transparent condition indicators and
+evaluated through a PLC-based decision layer.
+The revised methodology strengthens the original concept by defining the complete measurement chain, sensor-
+placement discipline, feature extraction equations, normalization procedure, weighted sensor-fusion score, PLC
+state logic, HMI requirements and experimental validation procedure. Worked calculations demonstrate how
+current RMS, phase-current imbalance, vibration RMS, crest factor and FFT resolution can be obtained from
+sampled signals.
+The paper deliberately avoids presenting illustrative plots or hypothetical classification metrics as measured
+results. The next research stage is therefore experimental implementation on a controlled motor test rig or
+approved industrial equipment. After collection of healthy and controlled-fault datasets, the proposed thresholds,
+fusion weights and PLC logic can be calibrated and the system can be evaluated using detection rate, false-alarm
+rate, precision, detection latency and monitoring availability.
+11
+--- PAGE 12 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+The resulting framework provides a practical intermediate step between conventional preventive maintenance
+and advanced predictive analytics. Once reliable data have been accumulated, future work can investigate
+additional variables such as temperature, voltage imbalance, speed and power factor, followed by statistical or
+machine-learning models where they provide measurable benefit.
+References
+Benbouzid, M.E.H. (2000) ‘A review of induction motors signature analysis as a medium for faults detection’,
+IEEE Transactions on Industrial Electronics, 47(5), pp. 984–993. doi:10.1109/41.873206.
+Gangsar, P. and Tiwari, R. (2020) ‘Signal based condition monitoring techniques for fault detection and
+diagnosis of induction motors: A state-of-the-art review’, Mechanical Systems and Signal Processing, 144,
+106908. doi:10.1016/j.ymssp.2020.106908.
+Gangsar, P. and Tiwari, R. (2017) ‘Comparative investigation of vibration and current monitoring for prediction
+of mechanical and electrical faults in induction motor based on multiclass-support vector machine
+algorithms’, Mechanical Systems and Signal Processing, 94, pp. 464–481.
+doi:10.1016/j.ymssp.2017.03.016.
+IEC (2026) IEC 60034-1:2026, Rotating electrical machines – Part 1: Rating and performance. Geneva:
+International Electrotechnical Commission.
+ISO (2016) ISO 20816-1:2016, Mechanical vibration – Measurement and evaluation of machine vibration – Part
+1: General guidelines. Geneva: International Organization for Standardization.
+Niu, G. (2023) ‘Motor fault diagnostics based on current signatures: A review’, IEEE Transactions on
+Instrumentation and Measurement, 72, 3520919. doi:10.1109/TIM.2023.3285999.
+Yang, B.-S. and Kim, K.J. (2006) ‘Application of Dempster–Shafer theory in fault diagnosis of induction
+motors using vibration and current signals’, Mechanical Systems and Signal Processing, 20(2), pp. 403–420.
+doi:10.1016/j.ymssp.2004.10.010.
+Yakhni, M.F., Cauet, S., Sakout, A., Assoum, H., Etien, E., Rambault, L. and El-Gohary, M. (2023) ‘Variable
+speed induction motors’ fault detection based on transient motor current signatures analysis: A review’,
+Mechanical Systems and Signal Processing, 184, 109737. doi:10.1016/j.ymssp.2022.109737.
+Miljković, M. (2015) ‘Brief review of motor current signature analysis’, CrSNDT Journal, 5(1), pp. 14–26.
+Geethanjali, M. and Ramadoss, H. (2019) ‘Fault diagnosis of induction motors using motor current signature
+analysis: A review’, in Advanced Condition Monitoring and Fault Diagnosis of Electric Machines. Hershey,
+PA: IGI Global.
+Author Note
+Takunda Pambayi is an Electrical/Automation Engineering professional and Master's student in Industrial
+Automation at the Harare Institute of Technology, Zimbabwe. His technical interests include industrial
+automation, PLC systems, motor drives, condition monitoring, predictive maintenance and energy management.
+Academic integrity note: this revised manuscript is newly worded and uses Harvard-style attribution to
+distinguish the author's proposed engineering framework from published research. No method can guarantee a
+particular result from an AI-detection service, because such detectors are probabilistic and can produce false
+positives. The appropriate protection against plagiarism is original analysis, accurate citation and insertion of the
+author's own experimental data, figures and observations.
+CONTENTS
+1. Introduction
+2. Literature Review and Research Gap
+12
+--- PAGE 13 ---
+PLC-BASED MULTI-SENSOR CONDITION MONITORING OF INDUSTRIAL MOTORS
+3. Proposed System Architecture
+4. Signal Processing and Engineering Calculations
+5. PLC Decision Logic and HMI Design
+6. Experimental Validation Method
+7. Illustrative Analysis and Performance Metrics
+8. Discussion
+9. Implementation Considerations for Industrial Deployment
+10. Conclusion
+References
+13

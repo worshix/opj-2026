@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: linear-gradient(160deg, #ecfdf5 0%, #f0f9ff 45%, #faf5ff 100%);
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+input, select {
+  @apply rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400;
+}
+
+.btn {
+  @apply rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90;
+}

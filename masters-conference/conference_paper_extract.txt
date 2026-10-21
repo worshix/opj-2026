@@ -1,0 +1,170 @@
+Page 1:
+PLC Based Multi Sensor Condition Monitoring of Industrial
+Motors for Digital Industrial Transformation
+TakundaPambayi
+HarareInstituteofTechnology,Harare,Zimbabwe
+Abstract. Industrial motors drive pumps, compressors, fans and conveyors. Unexpected failure stops produc-
+tion. This paper presents a practical condition monitoring framework that uses a programmable logic controller
+to combine motor electrical current and mechanical vibration. Time and frequency domain features are fused to
+classifynormal,warningandcriticalstates. TheworksuitsplantsthatalreadyhavePLCinfrastructureandneed
+anaffordablestepfrompreventivetoconditionbasedmaintenance.
+Keywords: PLC,conditionmonitoring,inductionmotor,multisensorfusion,predictivemaintenance.
+Addressforcorrespondence: TakundaPambayi,HarareInstituteofTechnology,GangesRoad,Harare,Zimbabwe; e-mail:
+tpambayi@hit.ac.zw
+Introduction
+alization. Current transformers and accelerometers
+collect signals. Filters and isolators condition them.
+Electric motors keep factories moving. When one ThePLCcomparesextractedfeaturesagainstthresh-
+fails, an entire process line can stop. Conventional olds and fuses them. Sensor mounting matters; the
+maintenanceoftenrunsonfixedcalendarsorwaitsfor accelerometer should sit near the bearing in a fixed
+visibletrouble. Bothapproachesmissearlysignsand radial direction, and operating speed, load and sam-
+canwastespareparts. plingsettingsmustbelogged(ISO,2016).
+Condition based maintenance uses live measure-
+ments to decide when attention is needed. Current
+Sensing:CT+accelerometer
+can be measured without touching the rotating shaft
+(Benbouzid,2000).Vibrationgivesdirectevidenceof
+mechanical wear, imbalance and looseness (Gangsar Signalconditioning
+and Tiwari, 2020). Many plants already use pro-
+grammable logic controllers for motor control, so Featureextraction
+addingconditionlogictothesamePLCkeepsmoni-
+toringaffordable.
+PLCdecisionandfusion
+ThispaperproposesaPLCbasedmultisensorsys-
+temforindustrialinductionmotors. Itcombineselec-
+HMI/SCADA
+trical current andvibration evidence to detect abnor-
+malstatesearly. Figure1:ProposedPLCbasedmultisensormonitoring
+architecture.
+Related Work and Research Gap
+Signal Processing and Fusion
+Motor current signature analysis identifies abnormal
+patterns in stator current spectra (Benbouzid, 2000).
+Vibrationanalysiscapturesbearingdefects,misalign- ForasampledcurrentwindowofNsamples,theRMS
+mentandlooseness(GangsarandTiwari,2020).Yang currentis
+(cid:115)
+and Kim (2006) showed that combining the two sig- 1 N
+I = ∑i2. (1)
+nals improves fault decisions. Recent work has ex- RMS N k
+k=1
+tended these methods to variable speed drives (Niu,
+Threephase imbalanceis thelargestphase deviation
+2023;Yakhnietal.,2023). Manyadvancedsystems,
+fromtheaveragecurrentdividedbytheaverage. Vi-
+however, still need specialist hardware or machine
+brationRMSiscomputedsimilarly,whilecrestfactor
+learning platforms that smaller factories cannot af-
+linkspeakaccelerationtoRMSvibration:
+ford. The gap is a transparent, PLC centred method
+thatfitsexistingcontrolinfrastructure. max(|x |)
+k
+CrestFactor= . (2)
+X
+RMS
+Proposed System Architecture Spectral features come from the Fast Fourier Trans-
+form,withbinspacing∆f =F/N.
+s
+Thesystemhasfivelayers: sensing,signalcondition- Eachfeatureisnormalisedagainstahealthybase-
+ing, feature extraction, PLC decision and HMI visu- line.TheelectricalindicatorCandvibrationindicator
+
+---
+Page 2:
+V areclippedto[0,1]. Aweightedfusionscorethen 100
+combinesthem: 80
+60
+S=w C+w V, w +w =1. (3)
+c v c v 40
+20
+IfC=0.65,V =0.85,w =0.40andw =0.60,then
+c v
+0
+S=0.77,whichfallsinthewarningbandwhenwarn-
+Currentonly Vibrationonly Fused
+ingandcriticalthresholdsare0.60and0.80.
+Approach
+currentsensor currentfeatures normalisedC fusionscoreS statedecision
+accelerometer vibrationfeatures normalisedV
+Figure2:Signalprocessingandfusionchainfromsensors
+toPLCdecision.
+PLC Decision and HMI
+ThePLCassignsoneoffourstates.Normalmeansall
+featuresarewithinhealthylimits.Warningmeansone
+featurehascrosseditswarningthresholdforapersis-
+tence period. Critical means several features are ab-
+normal or a severe threshold is passed. Sensor fault
+flagsmissingorsaturatedreadingssothesystemdoes
+notdecidefrombaddata. TheHMIshowsmotorsta-
+tus,currentandvibrationRMS,conditionstate,alarm
+historyandsensorhealth.
+Table1:Expectedindicatorbehaviourforselected
+conditions.
+Condition Currentevidence Vibrationevidence
+Healthy StableRMSand StableRMSand
+spectrum spectrum
+Overload HighRMScurrent Loadrelatedincrease
+Bearingwear Modulationsidebands RMS,crestfactorand
+kurtosisrise
+Misalignment Currentvariation Axial/radialvibration
+increase
+Electrical Imbalanceordistortion Secondaryresponse
+fault
+Validation and Discussion
+Validation should start with healthy data at several
+loads. Controlled faults such as imbalance or mis-
+alignmentarethenintroducedoneatatime. Metrics
+include detection rate, false alarm rate, detection la-
+tencyandmonitoringavailability(IEC,2026). Figure
+3comparestheproposedfusedapproachwithcurrent
+only and vibration only monitoring. The fused ap-
+proach scores higher on both electrical and mechan-
+ical sensitivity. The main benefit is earlier warning
+without a separate specialist system. Limitations in-
+cludemotorspecificbaselinesandtheeffectsofsen-
+sormounting,VFDswitchingandloadvariation.
+erocsevitaleR
+Electrical Mechanical Confidence
+Figure3:Illustrativecomparisonofmonitoringstrategies.
+Valuesarenotmeasureddata.
+Conclusion
+A PLC based multi sensor framework for industrial
+motor condition monitoring has been presented. It
+combines current and vibration evidence into trans-
+parentindicatorsandfusesthemthroughsimplePLC
+logic.Thedesignusesexistingautomationinfrastruc-
+ture,makingitaccessibletofactoriesthatcannotyet
+invest in advanced analytics platforms. Future work
+shouldvalidatethresholdsonamotortestrigandex-
+tend the system with temperature, voltage and speed
+information.
+References
+Benbouzid,M.E.H.(2000)‘Areviewofinductionmotors
+signatureanalysisasamediumforfaultsdetection’,IEEE
+TransactionsonIndustrialElectronics,47(5),pp.984–993.
+doi:10.1109/41.873206.
+Gangsar,P.andTiwari,R.(2020)‘Signalbasedcondition
+monitoringtechniquesforfaultdetectionanddiagnosisof
+inductionmotors:astateoftheartreview’,Mechanical
+SystemsandSignalProcessing,144,p.106908.
+doi:10.1016/j.ymssp.2020.106908.
+Yang,B.S.andKim,K.J.(2006)‘ApplicationofDempster–Shafer
+theoryinfaultdiagnosisofinductionmotorsusingvibration
+andcurrentsignals’,MechanicalSystemsandSignal
+Processing,20(2),pp.403–420.
+doi:10.1016/j.ymssp.2004.10.010.
+Niu,G.(2023)‘Motorfaultdiagnosticsbasedoncurrent
+signatures:areview’,IEEETransactionsonInstrumentation
+andMeasurement,72,p.3520919.
+doi:10.1109/TIM.2023.3285999.
+Yakhni,M.F.,Cauet,S.,Sakout,A.,Assoum,H.,Etien,E.,
+Rambault,L.andElGohary,M.(2023)‘Variablespeed
+inductionmotors’faultdetectionbasedontransientmotor
+currentsignaturesanalysis:areview’,MechanicalSystemsand
+SignalProcessing,184,p.109737.
+doi:10.1016/j.ymssp.2022.109737.
+ISO(2016)ISO20816-1:2016Mechanicalvibration–
+Measurementandevaluationofmachinevibration–Part1:
+Generalguidelines.Geneva:InternationalOrganizationfor
+Standardization.
+IEC(2026)IEC60034-1:2026Rotatingelectricalmachines–Part
+1:Ratingandperformance.Geneva:International
+ElectrotechnicalCommission.
